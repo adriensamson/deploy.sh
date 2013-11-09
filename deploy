@@ -8,11 +8,18 @@ fi
 
 . .deployrc
 
+function hook
+{
+    local NAME=$1
+    shift
+    test -f .deploy.$NAME && . .deploy.$NAME $@
+}
+
 cd $GIT_REPO
 git fetch origin
 cd -
 
-RELEASE_DIR=$(date -Iseconds)
+RELEASE=$(date -Iseconds)
 
 if [ ! -z "$1" ]
 then
@@ -21,7 +28,12 @@ else
     REF=master
 fi
 
-git archive --format=tar --remote=$GIT_REPO --prefix=$RELEASE_DIR/ $REF | tar x -C releases
+git archive --format=tar.gz --remote=$GIT_REPO --prefix=$RELEASE/ $REF -o $RELEASE.tar.gz
+
+tar xf "$RELEASE.tar.gz" -C releases --force-local
+hook extract.after $RELEASE
+
+rm $RELEASE.tar.gz
 
 rm current
-ln -s releases/$RELEASE_DIR current
+ln -s releases/$RELEASE current
