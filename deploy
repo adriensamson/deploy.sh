@@ -1,0 +1,27 @@
+#/bin/sh
+
+if [ ! -f .deployrc ]
+then
+    echo No .deployrc found
+    exit 1
+fi
+
+. .deployrc
+
+cd $GIT_REPO
+git fetch origin
+cd -
+
+RELEASE_DIR=$(date -Iseconds)
+
+if [ ! -z "$1" ]
+then
+    REF="$1"
+else
+    REF=master
+fi
+
+git archive --format=tar --remote=$GIT_REPO --prefix=$RELEASE_DIR/ $REF | tar x -C releases
+
+rm current
+ln -s releases/$RELEASE_DIR current
