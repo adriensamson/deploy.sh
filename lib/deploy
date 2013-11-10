@@ -1,18 +1,18 @@
 #/bin/sh
 
-if [ ! -f .deployrc ]
+if [ ! -f ./.deployrc ]
 then
     echo No .deployrc found
     exit 1
 fi
 
-. .deployrc
+. ./.deployrc
 
 function hook
 {
     local NAME=$1
     shift
-    test -f .deploy.$NAME && . .deploy.$NAME $@
+    test -f ./.deploy.$NAME && . ./.deploy.$NAME $@
 }
 
 cd $GIT_REPO
