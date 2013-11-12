@@ -12,12 +12,10 @@ function hook
 {
     local NAME=$1
     shift
-    test -f ./.deploy.$NAME && . ./.deploy.$NAME $@
+    test -f ./.deploy.$NAME && (. ./.deploy.$NAME $@)
 }
 
-cd $GIT_REPO
-git fetch origin
-cd -
+(cd $GIT_REPO && git fetch origin)
 
 RELEASE=$(date -Iseconds)
 
