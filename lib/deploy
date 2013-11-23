@@ -1,4 +1,20 @@
-#/bin/sh
+#/bin/sh -e
+
+ARGS=$(getopt d: $*)
+set -- $ARGS
+while true
+do
+    case $1
+        d)
+            cd $2
+            shift 2
+        ;;
+        --)
+            shift
+            break
+        ;;
+    esac
+done
 
 if [ ! -f ./.deployrc ]
 then
