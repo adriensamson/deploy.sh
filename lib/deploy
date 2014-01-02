@@ -36,7 +36,7 @@ function hook
 
 (cd $GIT_REPO; git fetch origin) || exit 1
 
-RELEASE=$(date -Iseconds)
+RELEASE=$(date +%Y-%m-%d-%H-%M-%S)
 
 if [ ! -z "$1" ]
 then
