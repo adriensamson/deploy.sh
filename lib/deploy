@@ -1,53 +1,19 @@
 #/bin/sh -e
 
-ARGS=$(getopt d:i:r $*)
-set -- $ARGS
-while true
-do
-    case "$1" in
-        -d)
-            cd $2
-            shift 2
-        ;;
-        -i)
-            if [ -f .deployrc ]
-            then
-                echo Cannot init: .depoyrc already exists
-                exit 1
-            fi
-            git clone --mirror $2 sources
-            echo "GIT_REPO=sources" >.deployrc
-            mkdir releases shared
-            exit
-        ;;
-        -r)
-            DIRS=$(ls releases/ | sort | grep -B1 $(readlink current | sed s@releases/@@))
-            N=$(echo "$DIRS" | wc -l)
-            if [ $N -ne 2 ]
-            then
-                echo Cannot rollback
-                exit 1
-            fi
-            ln -sfn releases/$(echo "$DIRS" | head -n 1) current
-            exit
-        ;;
-        --)
-            shift
-            break
-        ;;
-        *)
-            echo Unknown option
-            exit 1
-    esac
-done
-
-if [ ! -f ./.deployrc ]
-then
-    echo No .deployrc found
-    exit 1
-fi
-
-. ./.deployrc
+function rollback
+{
+    local DIRS=$(ls releases/ | sort | grep -B1 $(readlink current | sed s@releases/@@))
+    local N=$(echo "$DIRS" | wc -l)
+    if [ $N -ne 2 ]
+    then
+        echo Cannot rollback
+        exit 1
+    fi
+    local RELEASE=$(echo "$DIRS" | head -n 1)
+    echo Rollbacking to $RELEASE
+    ln -sfn releases/$RELEASE current
+    hook switch.after $RELEASE
+}
 
 function hook
 {
@@ -75,6 +41,48 @@ function do_links
     fi
 }
 
+ARGS=$(getopt d:i:r $*)
+set -- $ARGS
+while true
+do
+    case "$1" in
+        -d)
+            cd $2
+            shift 2
+        ;;
+        -i)
+            if [ -f .deployrc ]
+            then
+                echo Cannot init: .depoyrc already exists
+                exit 1
+            fi
+            git clone --mirror $2 sources
+            echo "GIT_REPO=sources" >.deployrc
+            mkdir releases shared
+            exit
+        ;;
+        -r)
+            rollback
+            exit
+        ;;
+        --)
+            shift
+            break
+        ;;
+        *)
+            echo Unknown option
+            exit 1
+    esac
+done
+
+if [ ! -f ./.deployrc ]
+then
+    echo No .deployrc found
+    exit 1
+fi
+
+. ./.deployrc
+
 (cd $GIT_REPO; git fetch origin) || exit 1
 
 RELEASE=$(date +%Y-%m-%d-%H-%M-%S)
@@ -89,9 +97,11 @@ fi
 git archive --format=tar.gz --remote=$GIT_REPO --prefix=$RELEASE/ $REF -o $RELEASE.tar.gz
 
 tar xf "$RELEASE.tar.gz" -C releases --force-local
+rm $RELEASE.tar.gz
+
 do_links $RELEASE
 hook extract.after $RELEASE
 
-rm $RELEASE.tar.gz
-
 ln -sfn releases/$RELEASE current
+
+hook switch.after $RELEASE
