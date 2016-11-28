@@ -1,6 +1,6 @@
 #/bin/sh -e
 
-ARGS=$(getopt d:i: $*)
+ARGS=$(getopt d:i:r $*)
 set -- $ARGS
 while true
 do
@@ -18,6 +18,17 @@ do
             git clone --mirror $2 sources
             echo "GIT_REPO=sources" >.deployrc
             mkdir releases shared
+            exit
+        ;;
+        -r)
+            DIRS=$(ls releases/ | sort | grep -B1 $(readlink current | sed s@releases/@@))
+            N=$(echo "$DIRS" | wc -l)
+            if [ $N -ne 2 ]
+            then
+                echo Cannot rollback
+                exit 1
+            fi
+            ln -sfn releases/$(echo "$DIRS" | head -n 1) current
             exit
         ;;
         --)
@@ -58,7 +69,6 @@ function do_links
             then
                 INRELEASE="$INSHARED"
             fi
-            echo $INSHARED $INRELEASE
             mkdir -p $(dirname $PWD/releases/$1/$INRELEASE)
             ln -s $PWD/shared/$INSHARED $PWD/releases/$1/$INRELEASE
         done <.deploy.links
