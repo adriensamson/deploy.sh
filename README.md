@@ -19,20 +19,37 @@ You'll end up with this directory structure:
 
 ```
 releases/
+shared/
 sources/
 current -> releases/2014-01-10-19-24-48
 .deployrc
 ```
 
 ```
-mkdir releases
-git clone --mirror git@github.com/you/yourproject sources
-echo GIT_REPO=sources >.deployrc
+deploy -i git@github.com/you/yourproject
 ```
 
 You can now deploy with
 ```
 deploy
+```
+
+## Auto links
+
+You can add a list of symbolic links to recreate at each release in `.deploy.links`. For instance, with
+
+```
+config.json
+nested/conf.yml
+key.pem ssl/key.pem
+```
+
+it will create the following links :
+
+```
+releases/$RELEASE/config.json -> shared/config.json
+releases/$RELEASE/nested/conf.yml -> shared/nested/conf.yml
+releases/$RELEASE/ssl/key.pem -> shared/key.pem
 ```
 
 ## Hooks

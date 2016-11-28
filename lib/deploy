@@ -1,6 +1,6 @@
 #/bin/sh -e
 
-ARGS=$(getopt d: $*)
+ARGS=$(getopt d:i: $*)
 set -- $ARGS
 while true
 do
@@ -8,6 +8,17 @@ do
         -d)
             cd $2
             shift 2
+        ;;
+        -i)
+            if [ -f .deployrc ]
+            then
+                echo Cannot init: .depoyrc already exists
+                exit 1
+            fi
+            git clone --mirror $2 sources
+            echo "GIT_REPO=sources" >.deployrc
+            mkdir releases shared
+            exit
         ;;
         --)
             shift
@@ -34,6 +45,26 @@ function hook
     test -f ./.deploy.$NAME && {(. ./.deploy.$NAME $@) || exit 1;}
 }
 
+function do_links
+{
+    if [ -f .deploy.links ]
+    then
+        while read INSHARED INRELEASE
+        do
+            if [ -z "$INSHARED" ]
+            then
+                continue
+            elif [ -z "$INRELEASE" ]
+            then
+                INRELEASE="$INSHARED"
+            fi
+            echo $INSHARED $INRELEASE
+            mkdir -p $(dirname $PWD/releases/$1/$INRELEASE)
+            ln -s $PWD/shared/$INSHARED $PWD/releases/$1/$INRELEASE
+        done <.deploy.links
+    fi
+}
+
 (cd $GIT_REPO; git fetch origin) || exit 1
 
 RELEASE=$(date +%Y-%m-%d-%H-%M-%S)
@@ -48,9 +79,9 @@ fi
 git archive --format=tar.gz --remote=$GIT_REPO --prefix=$RELEASE/ $REF -o $RELEASE.tar.gz
 
 tar xf "$RELEASE.tar.gz" -C releases --force-local
+do_links $RELEASE
 hook extract.after $RELEASE
 
 rm $RELEASE.tar.gz
 
-rm current
-ln -s releases/$RELEASE current
+ln -sfn releases/$RELEASE current
