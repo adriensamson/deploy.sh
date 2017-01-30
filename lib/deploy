@@ -15,6 +15,16 @@ function rollback
     hook switch.after $RELEASE
 }
 
+function clean
+{
+    local NUM=$1
+    local DIRS=$(ls releases/ | sort | grep -v $(readlink current | sed s@releases/@@) | head -n -$NUM)
+    for d in $DIRS
+    do
+        rm -rf releases/$d
+    done
+}
+
 function hook
 {
     local NAME=$1
@@ -41,7 +51,7 @@ function do_links
     fi
 }
 
-ARGS=$(getopt d:i:r $*)
+ARGS=$(getopt d:i:rc: $*)
 set -- $ARGS
 while true
 do
@@ -63,6 +73,10 @@ do
         ;;
         -r)
             rollback
+            exit
+        ;;
+        -c)
+            clean $2
             exit
         ;;
         --)
