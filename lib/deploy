@@ -108,10 +108,8 @@ else
     REF=master
 fi
 
-git archive --format=tar.gz --remote=$GIT_REPO --prefix=$RELEASE/ $REF -o $RELEASE.tar.gz
-
-tar xf "$RELEASE.tar.gz" -C releases --force-local
-rm $RELEASE.tar.gz
+git clone --no-local --depth 1 --recurse-submodules --shallow-submodules --branch $REF $GIT_REPO releases/$RELEASE
+find releases/$RELEASE -name .git -exec rm -rf '{}' +
 
 do_links $RELEASE
 hook extract.after $RELEASE
