@@ -1,4 +1,4 @@
-#/bin/sh -e
+#/bin/bash -e
 
 function rollback
 {
@@ -11,17 +11,20 @@ function rollback
     fi
     local RELEASE=$(echo "$DIRS" | head -n 1)
     echo Rollbacking to $RELEASE
+    OLD=$(readlink current)
     ln -sfn releases/$RELEASE current
+    mv $OLD releases/r${OLD#releases/}
     hook switch.after $RELEASE
 }
 
 function clean
 {
     local NUM=$1
-    local DIRS=$(ls releases/ | sort | grep -v $(readlink current | sed s@releases/@@) | head -n -$NUM)
-    for d in $DIRS
+    local ROLLBACKED=$(ls releases/ | sort | grep r)
+    local OLDEST=$(ls releases/ | sort | grep -v $(readlink current | sed s@releases/@@) | grep -v r | head -n -$NUM)
+    for d in $ROLLBACKED $OLDEST
     do
-        rm -rf releases/$d
+        echo rm -rf releases/$d
     done
 }
 
