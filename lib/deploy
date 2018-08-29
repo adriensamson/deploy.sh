@@ -33,7 +33,10 @@ function hook
 {
     local NAME=$1
     shift
-    test -f ./.deploy.$NAME && {(. ./.deploy.$NAME $@) || exit 1;}
+    if [ -f ./.deploy.$NAME ]
+    then
+        bash ./.deploy.$NAME $@
+    fi
 }
 
 function do_links
